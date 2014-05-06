@@ -53,6 +53,34 @@ void enqueue(struct queue_t * Q, int val){
 }
 
 
+int dequeue(struct queue_t * Q,int * pvalue){
+
+	struct node_t * head;
+	struct node_t * tail;
+	struct node_t * next;
+	int temp;
+	
+	while(1){
+		head =  Q->Head;
+		tail =  Q->Tail;
+		next =  head->next;
+		if ( head == Q->Head){
+			if (head == tail){
+				if ( next == NULL) 
+					return 0;
+				temp = __sync_bool_compare_and_swap(&Q->Tail,tail,next);
+			}
+			else{
+				*pvalue = next->value;
+				if( __sync_bool_compare_and_swap(&Q->Head,head,next))
+					break;
+			}
+		}
+	}
+	free(head);
+	return 1;
+}
+
 void printqueue(struct queue_t * Q){
 	
 	struct node_t * curr ;
@@ -72,8 +100,9 @@ void printqueue(struct queue_t * Q){
 
 int main(int argc, char *argv[]){
 
-
-
+	int res = 0;
+	int val = 0;
+	int i ;
 	struct queue_t * Q = (struct queue_t *) malloc(sizeof(struct queue_t));
 	initialize(Q);
 	/*Q->Head.ptr->value = 5;
@@ -88,6 +117,15 @@ int main(int argc, char *argv[]){
 	enqueue(Q,4);
 	enqueue(Q,5);
 	enqueue(Q,3);
+	printqueue(Q);
+
+	for(i =0 ;i <8 ; i++){
+		res = dequeue(Q,&val);
+		if (res == 1)printf(" dequeued ---> %d \n",val);
+		else printf(" queue is empty \n");
+	}
+	
+	enqueue(Q,7);
 	printqueue(Q);
 	return 1;
 }
