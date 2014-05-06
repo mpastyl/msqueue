@@ -21,7 +21,7 @@ struct queue_t{
 void initialize(struct queue_t * Q){//TODO: init count?
 	struct node_t * node = (struct node_t *) malloc(sizeof(struct node_t));
 	node->next = NULL;
-	Q->Head = node; //TODO: check this
+	Q->Head = node; 
 	Q->Tail = node;
 }
 
@@ -89,7 +89,7 @@ void printqueue(struct queue_t * Q){
 	curr = Q->Head;
 	next = Q->Head->next;
 	while (curr != Q->Tail){
-		printf(" %d ",curr->value);
+		printf("%d ",curr->value);
 		curr = next;
 		next = curr ->next;
 	}
@@ -105,14 +105,7 @@ int main(int argc, char *argv[]){
 	int i ;
 	struct queue_t * Q = (struct queue_t *) malloc(sizeof(struct queue_t));
 	initialize(Q);
-	/*Q->Head.ptr->value = 5;
-	printf(" %d \n",Q->Head.ptr->value);
-	struct node_t * node = (struct node_t *) malloc(sizeof(struct node_t));
-	node->value = 6;
-	Q->Head.ptr->next.ptr=node;
-	printf(" %d \n",Q->Head.ptr->next.ptr->value);
-	*/
-	enqueue(Q,5);
+	/*enqueue(Q,5);
 	enqueue(Q,2);
 	enqueue(Q,4);
 	enqueue(Q,5);
@@ -126,6 +119,30 @@ int main(int argc, char *argv[]){
 	}
 	
 	enqueue(Q,7);
+	printqueue(Q);
+	*/
+	#pragma omp parallel num_threads(4) shared (Q) private(res,val)
+	{
+		enqueue(Q,omp_get_thread_num());
+		if (omp_get_thread_num() == 1){
+			enqueue(Q,1);
+			enqueue(Q,1);
+			enqueue(Q,1);
+		}
+		else if(omp_get_thread_num() == 2){
+			res=dequeue(Q,&val);
+			if (res)printf("  dequeued ------>%d \n",val);
+			res=dequeue(Q,&val);
+			if(res)printf("  dequeued ------>%d \n",val);
+			res=dequeue(Q,&val);
+			if(res)printf("  dequeued ------>%d \n",val);
+		}
+		else if(omp_get_thread_num() ==3 ){
+			
+			enqueue(Q,3);
+			enqueue(Q,3);
+		}
+	}
 	printqueue(Q);
 	return 1;
 }
