@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "timers_lib.h"
 /*struct pointer_t{
 	struct node_t * ptr;
 	unsigned long long count;
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]){
 
 	int res = 0;
 	int val = 0;
-	int i ;
+	int i ,j;
 	struct queue_t * Q = (struct queue_t *) malloc(sizeof(struct queue_t));
 	initialize(Q);
 	/*enqueue(Q,5);
@@ -121,29 +121,20 @@ int main(int argc, char *argv[]){
 	enqueue(Q,7);
 	printqueue(Q);
 	*/
-	#pragma omp parallel num_threads(4) shared (Q) private(res,val)
-	{
-		enqueue(Q,omp_get_thread_num());
-		if (omp_get_thread_num() == 1){
-			enqueue(Q,1);
-			enqueue(Q,1);
-			enqueue(Q,1);
-		}
-		else if(omp_get_thread_num() == 2){
-			res=dequeue(Q,&val);
-			if (res)printf("  dequeued ------>%d \n",val);
-			res=dequeue(Q,&val);
-			if(res)printf("  dequeued ------>%d \n",val);
-			res=dequeue(Q,&val);
-			if(res)printf("  dequeued ------>%d \n",val);
-		}
-		else if(omp_get_thread_num() ==3 ){
-			
-			enqueue(Q,3);
-			enqueue(Q,3);
-		}
+    timer_tt * timer=timer_init();
+    timer_start(timer);
+	#pragma omp parallel for num_threads(4) shared(Q) private(res,val,i,j)
+	for(i=0;i<4;i++){
+         for (j=0;j<1000;j++){
+                enqueue(Q,i);
+                res = dequeue(Q,&val);
+                if (res) printf("thread %d  dequeued --> %d\n",omp_get_thread_num(),val);
+         }
 	}
 	printqueue(Q);
+    timer_stop(timer);
+    double time_res = timer_report_sec(timer);
+    printf("Total time  %lf \n",time_res);
 	return 1;
 }
 	
