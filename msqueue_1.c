@@ -58,10 +58,12 @@ int dequeue(struct queue_t * Q,int * pvalue){
 	struct node_t * head;
 	struct node_t * tail;
 	struct node_t * next;
-	int temp;
-	
+	int  temp;
+	int first_val;
+
 	while(1){
 		head =  Q->Head;
+        first_val=head->value;
 		tail =  Q->Tail;
 		next =  head->next;
 		if ( head == Q->Head){
@@ -71,12 +73,14 @@ int dequeue(struct queue_t * Q,int * pvalue){
 				temp = __sync_bool_compare_and_swap(&Q->Tail,tail,next);
 			}
 			else{
+                if ((head==Q->Head) &&(first_val!=head->value)) printf("change detected!\n");
 				*pvalue = next->value;
 				if( __sync_bool_compare_and_swap(&Q->Head,head,next))
 					break;
 			}
 		}
 	}
+    //printf(" about to free %p \n",head);
 	free(head);
 	return 1;
 }
@@ -125,7 +129,7 @@ int main(int argc, char *argv[]){
     timer_start(timer);
 	#pragma omp parallel for num_threads(4) shared(Q) private(res,val,i,j)
 	for(i=0;i<4;i++){
-         for (j=0;j<10000;j++){
+         for (j=0;j<100000;j++){
                 enqueue(Q,i);
                 res = dequeue(Q,&val);
                 //if (res) printf("thread %d  dequeued --> %d\n",omp_get_thread_num(),val);
