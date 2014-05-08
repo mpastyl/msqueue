@@ -125,13 +125,13 @@ int main(int argc, char *argv[]){
     timer_start(timer);
 	#pragma omp parallel for num_threads(4) shared(Q) private(res,val,i,j)
 	for(i=0;i<4;i++){
-         for (j=0;j<1000;j++){
+         for (j=0;j<10000;j++){
                 enqueue(Q,i);
                 res = dequeue(Q,&val);
-                if (res) printf("thread %d  dequeued --> %d\n",omp_get_thread_num(),val);
+                //if (res) printf("thread %d  dequeued --> %d\n",omp_get_thread_num(),val);
          }
 	}
-	printqueue(Q);
+	//printqueue(Q);
     timer_stop(timer);
     double time_res = timer_report_sec(timer);
     printf("Total time  %lf \n",time_res);
