@@ -29,18 +29,18 @@ struct queue_t{
 
 unsigned long long get_count(unsigned long long a){
     
-    unsigned long long b = a >>62;
+    unsigned long long b = a >>48;
     return b;
 }
 
 unsigned long long get_pointer(unsigned long long a){
-    unsigned long long b = a << 2;
-    b= b >>2;
+    unsigned long long b = a << 16;
+    b= b >>16;
     return b;
 }
 
 unsigned long long set_count(unsigned long long  a, unsigned long long count){
-    unsigned long long count_temp =  count << 62;
+    unsigned long long count_temp =  count << 48;
     unsigned long long b = get_pointer(a);
     b = b | count_temp;
     return b;
@@ -117,7 +117,7 @@ int dequeue(struct queue_t * Q,int * pvalue){
 				temp = __sync_bool_compare_and_swap(&Q->Tail,tail,new_to_set);
 			}
 			else{
-                if ((head==Q->Head) &&(first_val!=((struct node_t *)get_pointer(head))->value)) printf("change detected!\n");
+                //if ((head==Q->Head) &&(first_val!=((struct node_t *)get_pointer(head))->value)) printf("change detected!\n");
 				*pvalue =((struct node_t *)get_pointer(next))->value;
                 new_to_set = set_both(new_to_set,next,get_count(head)+1);
 				if( __sync_bool_compare_and_swap(&Q->Head,head,new_to_set))
@@ -158,13 +158,13 @@ int main(int argc, char *argv[]){
 	int i ,j;
 	struct queue_t * Q = (struct queue_t *) malloc(sizeof(struct queue_t));
 	initialize(Q);
-    printf(" #### %p\n",&Q);
-    printf("count -> %llu\n",get_count(&Q));
-    printf("pointer -> %llu\n",get_pointer(&Q));
-    printf("queue head \n");
-    printf(" #### %p\n",&Q->Head);
-    printf("count -> %llu\n",get_count(&Q->Head));
-    printf("pointer -> %llu\n",get_pointer(&Q->Head));
+    //printf(" #### %p\n",&Q);
+    //printf("count -> %llu\n",get_count(&Q));
+    //printf("pointer -> %llu\n",get_pointer(&Q));
+    //printf("queue head \n");
+    //printf(" #### %p\n",&Q->Head);
+    //printf("count -> %llu\n",get_count(&Q->Head));
+    //printf("pointer -> %llu\n",get_pointer(&Q->Head));
 
     /*enqueue(Q,5);
     enqueue(Q,7);
