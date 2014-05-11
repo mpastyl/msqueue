@@ -81,7 +81,10 @@ void printqueue(struct queue_t * Q){
 
 int main(int argc, char *argv[]){
 
-    int res,val,i,j; 
+    int res,val,i,j,num_threads,count; 
+
+    num_threads=atoi(argv[1]);
+    count =atoi(argv[2]);
 
 	struct queue_t * Q = (struct queue_t *) malloc(sizeof(struct queue_t));
     //Q->Head =  NULL;
@@ -97,9 +100,9 @@ int main(int argc, char *argv[]){
     
     timer_tt * timer = timer_init();
     timer_start(timer);
-    #pragma omp parallel for num_threads(4) shared(Q) private(res,val,i,j)
-    for(i=0;i<4;i++){
-        for(j=0; j<100000;j++){
+    #pragma omp parallel for num_threads(num_threads) shared(Q) private(res,val,i,j)
+    for(i=0;i<num_threads;i++){
+        for(j=0; j<count;j++){
             #pragma omp critical
             {
                 enqueue(Q,i);
@@ -113,8 +116,9 @@ int main(int argc, char *argv[]){
     }
     timer_stop(timer);
     double timer_val = timer_report_sec(timer);
+    printf("num_threads %d enq-deqs pes threadd %d\n",num_threads,count);
     printf("total time %lf\n",timer_val);
-    printqueue(Q);
+    //printqueue(Q);
 	return 1;
 }
 	
