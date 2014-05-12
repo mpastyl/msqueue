@@ -102,7 +102,7 @@ int main(int argc, char *argv[]){
     timer_start(timer);
     #pragma omp parallel for num_threads(num_threads) shared(Q) private(res,val,i,j)
     for(i=0;i<num_threads;i++){
-        for(j=0; j<count;j++){
+        for(j=0; j<count/num_threads;j++){
             #pragma omp critical
             {
                 enqueue(Q,i);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]){
     }
     timer_stop(timer);
     double timer_val = timer_report_sec(timer);
-    printf("num_threads %d enq-deqs pes threadd %d\n",num_threads,count);
+    printf("num_threads %d enq-deqs total %d\n",num_threads,count);
     printf("total time %lf\n",timer_val);
     //printqueue(Q);
 	return 1;
