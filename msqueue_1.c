@@ -155,7 +155,10 @@ int main(int argc, char *argv[]){
 
 	int res = 0;
 	int val = 0;
-	int i ,j;
+	int i ,j,num_threads,count;
+    num_threads = atoi(argv[1]);
+    count = atoi(argv[2]);
+    printf("%d %d \n",num_threads,count);
 	struct queue_t * Q = (struct queue_t *) malloc(sizeof(struct queue_t));
 	initialize(Q);
     //printf(" #### %p\n",&Q);
@@ -191,9 +194,9 @@ int main(int argc, char *argv[]){
     
     timer_tt * timer=timer_init();
     timer_start(timer);
-	#pragma omp parallel for num_threads(4) shared(Q) private(res,val,i,j)
-	for(i=0;i<4;i++){
-         for (j=0;j<100000;j++){
+	#pragma omp parallel for num_threads(num_threads) shared(Q) private(res,val,i,j)
+	for(i=0;i<num_threads;i++){
+         for (j=0;j<count;j++){
                 enqueue(Q,i);
                 res = dequeue(Q,&val);
                 //if (res) printf("thread %d  dequeued --> %d\n",omp_get_thread_num(),val);
@@ -202,6 +205,7 @@ int main(int argc, char *argv[]){
 	//printqueue(Q);
     timer_stop(timer);
     double time_res = timer_report_sec(timer);
+    printf("num_threasd %d  enq-deqs per thread %d \n",num_threads,count);
     printf("Total time  %lf \n",time_res);
     
 	return 1;
