@@ -190,23 +190,62 @@ int main(int argc, char *argv[]){
     //printf(" increment count -> %llu\n",get_count(set_count(&Q,get_count(&Q) +1)));
     //printf(" change pointer -> %llu\n",set_pointer(&Q,&res));
     
+    srand(time(NULL));
+    timer_tt * timer;
+    int c,k;
+    timer_tt * glob_timer=timer_init();
+    timer_start(glob_timer);
+    long int sum=0;
+    double total_time=0;
     
-    
-    timer_tt * timer=timer_init();
-    timer_start(timer);
-	#pragma omp parallel for num_threads(num_threads) shared(Q) private(res,val,i,j)
+	#pragma omp parallel for num_threads(num_threads) shared(Q) private(res,val,i,j,c,timer,k) reduction(+:total_time) reduction(+:sum) 
 	for(i=0;i<num_threads;i++){
+         
+        //c=rand()%1000;
+        c=50;
+        timer=timer_init();
+        timer_start(timer);
+        sum=0;
          for (j=0;j<count/num_threads;j++){
                 enqueue(Q,i);
+                sum+=c;
+                for(k=0;k<c;k++);
                 res = dequeue(Q,&val);
                 //if (res) printf("thread %d  dequeued --> %d\n",omp_get_thread_num(),val);
          }
+         timer_stop(timer);
+         total_time=timer_report_sec(timer);
+         //printf("threads number %d total time %lf\n",omp_get_thread_num(),total_time);
 	}
+    //printf("new total_time %lf\n",total_time);
+    //printf("new sum %ld\n",sum);
+    double avg_total_time=total_time/(double)num_threads;
+    printf("avg time %lf\n",avg_total_time);
+/*long int avg_sum=sum/num_threads;
+    //printf("avg sum %ld\n",avg_sum);
+    timer_tt * timer2=timer_init();
+    timer_start(timer2);
+    for(k=0;k<avg_sum;k++) c=rand()%1000;
+    timer_stop(timer2);
+    double avg_delay=timer_report_sec(timer2);
+    //printf("average delay time %lf\n",avg_delay);
+    //printf("threads number %d  time %lf\n",omp_get_thread_num(),total_time);
+         
+    printf("average time %lf\t\n",avg_total_time - avg_delay);
+*/   
+    /*timer_stop(glob_timer);
+    printf("global time %lf\n",timer_report_sec(glob_timer));
+
+    glob_timer=timer_init();
+    timer_start(glob_timer);
+    for(i=0;i<sum;i++);
+    timer_stop(glob_timer);
+    printf("test delay %lf/n",timer_report_sec(glob_timer));
+    */
 	//printqueue(Q);
-    timer_stop(timer);
-    double time_res = timer_report_sec(timer);
-    printf("num_threasd %d  enq-deqs total %d \n",num_threads,count);
-    printf("Total time  %lf \n",time_res);
+    //timer_stop(timer);
+    //printf("num_threasd %d  enq-deqs total %d \n",num_threads,count);
+    //printf("Total time  %lf \n",time_res);
     
 	return 1;
 }
