@@ -67,11 +67,12 @@ void initialize(struct queue_t * Q){//TODO: init count?
 	Q->Tail.both= set_both(Q->Tail.both,node,0);
 }
 
-void enqueue(struct queue_t * Q, int val){
+int enqueue(struct queue_t * Q, int val){
 	
 	struct pointer_t tail;
     __int128 new_to_set;
 	int temp;	
+    int count = 0;
 	struct node_t * node = (struct node_t *) malloc(sizeof(struct node_t));
 	node->value = val;
 	node->next.both = 0;
@@ -83,15 +84,19 @@ void enqueue(struct queue_t * Q, int val){
                 new_to_set =set_both(new_to_set,node,get_count(next_p.both) +(__int128)1);
 				if (__sync_bool_compare_and_swap(&(((struct node_t * )get_pointer(tail.both))->next.both),next_p.both,new_to_set))
 					break;
+                else count++;
 			}
 			else{
                 new_to_set=set_both(new_to_set,next_p.both,get_count(tail.both)+(__int128)1);
 				temp = __sync_bool_compare_and_swap(&Q->Tail.both,tail.both,new_to_set);
+                if(!temp) count++;
 			}
 		}
 	}
     new_to_set=set_both(new_to_set,node,get_count(tail.both)+(__int128)1);
 	temp = __sync_bool_compare_and_swap(&Q->Tail.both,tail.both,new_to_set);
+    if(!temp) count++;
+    return count;
 }
 
 
@@ -103,6 +108,7 @@ int dequeue(struct queue_t * Q,int * pvalue){
 	int  temp;
 	int first_val;
     __int128 new_to_set;
+    int count = 0;
 	while(1){
 		head =  Q->Head;
         first_val=((struct node_t *)get_pointer(head.both))->value;
@@ -111,9 +117,11 @@ int dequeue(struct queue_t * Q,int * pvalue){
 		if ( head.both == Q->Head.both){
 			if (head.both == tail.both){
 				if ( get_pointer(next.both) == 0) 
-					return 0;
+					return count;
                 new_to_set =  set_both(new_to_set,next.both,get_count(tail.both) +(__int128)1);
+
 				temp = __sync_bool_compare_and_swap(&Q->Tail.both,tail.both,new_to_set);
+                if(!temp) count++;
 			}
 			else{
                 //if ((head==Q->Head) &&(first_val!=((struct node_t *)get_pointer(head))->value)) printf("change detected!\n");
@@ -121,12 +129,13 @@ int dequeue(struct queue_t * Q,int * pvalue){
                 new_to_set = set_both(new_to_set,next.both,get_count(head.both)+(__int128)1);
 				if( __sync_bool_compare_and_swap(&Q->Head.both,head.both,new_to_set))
 					break;
+                else count++;
 			}
 		}
 	}
     //printf(" about to free %p \n",head);
 	free(get_pointer(head.both));
-	return 1;
+	return count;
 }
 
 void printqueue(struct queue_t * Q){
@@ -190,63 +199,28 @@ int main(int argc, char *argv[]){
     //printf(" increment count -> %llu\n",get_count(set_count(&Q,get_count(&Q) +1)));
     //printf(" change pointer -> %llu\n",set_pointer(&Q,&res));
     
-    srand(time(NULL));
-    timer_tt * timer;
-    int c,k;
-    timer_tt * glob_timer=timer_init();
-    timer_start(glob_timer);
-    long int sum=0;
-    double total_time=0;
     
-	#pragma omp parallel for num_threads(num_threads) shared(Q) private(res,val,i,j,c,timer,k) reduction(+:total_time) reduction(+:sum) 
+    srand(time(NULL));   
+    int total_count=0;
+    int c,k;
+    timer_tt * timer=timer_init();
+    timer_start(timer);
+	#pragma omp parallel for num_threads(num_threads) shared(Q) private(res,val,i,j,c,k) reduction(+: total_count)
 	for(i=0;i<num_threads;i++){
-         
-        //c=rand()%1000;
-        c=50;
-        timer=timer_init();
-        timer_start(timer);
-        sum=0;
          for (j=0;j<count/num_threads;j++){
-                enqueue(Q,i);
-                sum+=c;
+                total_count += enqueue(Q,i);
+                c=rand()%1000;
                 for(k=0;k<c;k++);
-                res = dequeue(Q,&val);
+                total_count += dequeue(Q,&val);
                 //if (res) printf("thread %d  dequeued --> %d\n",omp_get_thread_num(),val);
          }
-         timer_stop(timer);
-         total_time=timer_report_sec(timer);
-         //printf("threads number %d total time %lf\n",omp_get_thread_num(),total_time);
 	}
-    //printf("new total_time %lf\n",total_time);
-    //printf("new sum %ld\n",sum);
-    double avg_total_time=total_time/(double)num_threads;
-    printf("avg time %lf\n",avg_total_time);
-/*long int avg_sum=sum/num_threads;
-    //printf("avg sum %ld\n",avg_sum);
-    timer_tt * timer2=timer_init();
-    timer_start(timer2);
-    for(k=0;k<avg_sum;k++) c=rand()%1000;
-    timer_stop(timer2);
-    double avg_delay=timer_report_sec(timer2);
-    //printf("average delay time %lf\n",avg_delay);
-    //printf("threads number %d  time %lf\n",omp_get_thread_num(),total_time);
-         
-    printf("average time %lf\t\n",avg_total_time - avg_delay);
-*/   
-    /*timer_stop(glob_timer);
-    printf("global time %lf\n",timer_report_sec(glob_timer));
-
-    glob_timer=timer_init();
-    timer_start(glob_timer);
-    for(i=0;i<sum;i++);
-    timer_stop(glob_timer);
-    printf("test delay %lf/n",timer_report_sec(glob_timer));
-    */
 	//printqueue(Q);
-    //timer_stop(timer);
-    //printf("num_threasd %d  enq-deqs total %d \n",num_threads,count);
-    //printf("Total time  %lf \n",time_res);
-    
+    timer_stop(timer);
+    double time_res = timer_report_sec(timer);
+    printf("num_threasd %d  enq-deqs total %d \n",num_threads,count);
+    printf("Total time  %lf \n",time_res);
+    printf("total failed CASs %d \n",total_count);
 	return 1;
 }
 	
